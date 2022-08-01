@@ -1,48 +1,51 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTaskDto } from './dto/create-task.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Task, TaskDocument, TaskStatus } from './entities/task.entity';
 import { Model } from 'mongoose';
+import { JwtPayload } from 'src/auth/dto/jwt-payload.dto';
+import { CreateTaskPayload } from './dto/create-task-payload.dto';
+import { CreateTaskDto } from './dto/createTaskWithUser.dto';
+import { UserPayload } from './dto/user-payload.dto';
+import { Task, TaskDocument, TaskStatus } from './entities/task.entity';
 
 @Injectable()
 export class TasksService {
   constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
 
-  createTask(createTaskDto: CreateTaskDto) {
-    // const task:  = {
-    //   id: uuid(),
-    //   title,
-    //   description,
-    //   status: TaskStatus.OPEN,
-    // };
-
-    // this.tasks.push(task);
-    // return task;
-    return new this.taskModel(createTaskDto).save();
+  async createTask(createTaskDto: CreateTaskDto) {
+    return await new this.taskModel(createTaskDto).save();
   }
 
-  getAllTask() {
-    // return this.tasks.filter((tesk) => {});
+  async getAllTask(user: string) {
+    try {
+      return await this.taskModel.find({ user }).orFail();
+    } catch (err) {
+      throw new NotFoundException();
+    }
   }
 
-  getTaskById(id: string) {
-    // if (this.tasks.find((task) => task.id === id)) {
-    //   return this.tasks.find((task) => task.id === id);
-    // } else {
-    //   throw new NotFoundException(`Task Id ${id} not found`);
-    // }
+  async getTaskById(id: string, user: string) {
+    try {
+      return await this.taskModel.findOne({ _id: id, user }).orFail();
+    } catch (err) {
+      throw new NotFoundException();
+    }
   }
 
-  delteTaskById(id: string) {
-    // this.getTaskById(id);
-    // const tasks = this.tasks.filter((task) => task.id !== id);
-    // this.tasks = tasks;
-    // return tasks;
+  async deleteTaskById(id: string, user: string) {
+    try {
+      return await this.taskModel.findOneAndDelete({ _id: id, user }).orFail();
+    } catch (err) {
+      throw new NotFoundException();
+    }
   }
 
-  updateTaskStatus(id: string, status: TaskStatus) {
-    // const task = this.getTaskById(id);
-    // task.status = status;
-    // return task;
+  async updateTaskStatus(id: string, status: TaskStatus, user: string) {
+    try {
+      return await this.taskModel
+        .findOneAndUpdate({ _id: id, user }, { status }, { new: true })
+        .orFail();
+    } catch (err) {
+      throw new NotFoundException();
+    }
   }
 }
